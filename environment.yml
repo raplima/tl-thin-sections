@@ -1,0 +1,23 @@
+name: tl
+channels:
+  - conda-forge
+  - pytorch
+dependencies:
+  - matplotlib
+  - gym
+  - scikit-learn
+  - opencv
+  - pytorch
+  - torchtext
+  - torchvision
+  - pytorch-lightning
+  - tqdm
+  - wandb
+  - jupyter
+  - pandas
+  - pip
+  - pip: 
+    - pytorch-lightning-bolts
+    - torchsummary
+    #- opencv-python
+
