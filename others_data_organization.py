@@ -130,6 +130,7 @@ def main():
         return None
 
     train_df.apply(move_imgs, axis=1)
+    test_df.apply(move_imgs, axis=1)
 
     # compute channel mean and std
     dset_mean, dset_std = compute_mean_std(train_dir, n_channels=3)
