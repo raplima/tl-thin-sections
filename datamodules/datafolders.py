@@ -159,7 +159,7 @@ class DataFolders(pl.LightningDataModule):
         """
         dm_train = DataLoader(self.dm_train,
                               batch_size=self.batch_size,
-                              num_workers=os.cpu_count()-2)
+                              num_workers=os.cpu_count()-1)
         return dm_train
 
     def val_dataloader(self):
@@ -169,7 +169,7 @@ class DataFolders(pl.LightningDataModule):
         """
         dm_val = DataLoader(self.dm_val,
                             batch_size=self.batch_size,
-                            num_workers=os.cpu_count()-2)
+                            num_workers=os.cpu_count()-1)
         return dm_val
 
     def test_dataloader(self):
@@ -180,5 +180,5 @@ class DataFolders(pl.LightningDataModule):
 
         dm_test = DataLoader(self.dset_test,
                              batch_size=self.batch_size,
-                             num_workers=os.cpu_count()-2)
+                             num_workers=os.cpu_count()-1)
         return dm_test

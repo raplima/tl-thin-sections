@@ -22,33 +22,33 @@ from utils.image_prediction_logger import ImagePredictionLogger
 
 def main():
     # set up config file:
-    config = configparser.ConfigParser()
-    config['main'] = {'file_in': self.parent.lineEdit_inputFile.text(),
-                      'file_out': self.parent.lineEdit_outputFile.text(),
-                      'filter': 'vertical_derivative'}
+    # config = configparser.ConfigParser()
+    # config['main'] = {'file_in': self.parent.lineEdit_inputFile.text(),
+    #                   'file_out': self.parent.lineEdit_outputFile.text(),
+    #                   'filter': 'vertical_derivative'}
 
-    config['filter'] = {'order': self.comboBox_order.currentText()}
+    # config['filter'] = {'order': self.comboBox_order.currentText()}
 
-    # write config file:
-    with open('config.ini', 'w') as configfile:
-        config.write(configfile)
-    config = configparser.ConfigParser()
-    config.read('config.ini')
+    # # write config file:
+    # with open('config.ini', 'w') as configfile:
+    #     config.write(configfile)
+    # config = configparser.ConfigParser()
+    # config.read('config.ini')
     ################################
-    dset_dir = '../data/Others/rawfoot-tiles'
-    dset_mean = [0.3589, 0.3601, 0.3187]
-    dset_std = [0.1479, 0.1419, 0.1361]
+    dset_dir = '../data/Histological_images_MSI_vs_MSS'
+    dset_mean = [0.7263, 0.5129, 0.6925]
+    dset_std = [0.1444, 0.1833, 0.1310]
     resnet_layers = 50
-    train_len = "24000"
-    batch_size = 32
-    max_epochs = 300
+    train_len = "500000"
+    batch_size = 128
+    max_epochs = 10
     # (torch.optim.RMSprop, 'RMSprop')
     optim = torch.optim.Adam
-    lr = 1e-2
-    pretrained = False
+    lr = 1e-3
+    pretrained = True
     pretrained_tag = 'randomly-initialized'
     num_gpus = -1
-    run_tag = 'Adam1lr-2'
+    run_tag = 'Adam1lr-3'
     load_weights_path = False  # 'trained_model.ckpt'  # False
     ################################
     pl.seed_everything(10)
