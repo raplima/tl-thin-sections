@@ -46,7 +46,8 @@ class DataFolders(pl.LightningDataModule):
         Args:
             data_dir (str, optional): Location of the image folders. Defaults to './'.
             batch_size (int, optional): Batch size. Defaults to 64.
-            val_prop (float, optional): Proportion of the dataset to include in the validation split. Defaults to 0.2.
+            val_prop (float, optional): Proportion of the dataset to include in the
+                validation split. Defaults to 0.2.
             dset_mean (list): Dataset mean values. Defaults to None.
             dset_std (list): Dataset standard deviation values. Defaults to None
         """
@@ -119,6 +120,9 @@ class DataFolders(pl.LightningDataModule):
             # select the subsets based on train_test_splits and appropriate dsets:
             self.dm_train = Subset(self.dset, x_ind_train)
             self.dm_val = Subset(dset_val, x_ind_val)
+
+            print(f'Train len: {len(self.dm_train)}')
+            print(f'Val len: {len(self.dm_val)}')
 
         if stage == 'test' or stage is None:
             self.dset_test = ImageFolder(os.path.join(self.data_dir, 'test'),
