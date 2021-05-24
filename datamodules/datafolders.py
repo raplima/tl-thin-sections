@@ -1,13 +1,4 @@
 """Defines a pl.LightningDataModule to load image data organized in folders.
-
-We might run into some issues when using multiprocessing to load the data when not in linux 
-(e.g., https://discuss.pytorch.org/t/multiprocessing-not-working-on-pytorch-on-macbook/80663, 
-https://discuss.pytorch.org/t/runtime-error-on-multithread-on-windows/106311/3)
-for now, set 
-num_workers = 0
-instead of 
-num_workers = os.cpu_count()
-for the dataloaders
 """
 import os
 
