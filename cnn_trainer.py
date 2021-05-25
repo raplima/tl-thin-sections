@@ -1,13 +1,16 @@
+"""Main executer script.
+Reads a config file to train the CNN models
+"""
 import configparser
 import os
 
 import pl_bolts
 import pytorch_lightning as pl
-import torch
-import wandb
+import torch  # needed for `optim=eval(config['trainer']['optim']))`
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 
+import wandb
 ################################
 # Import models and datamodules
 ################################
@@ -21,35 +24,11 @@ from utils.image_prediction_logger import ImagePredictionLogger
 
 
 def main():
-    # set up config file:
-    # config = configparser.ConfigParser()
-    # config['main'] = {'file_in': self.parent.lineEdit_inputFile.text(),
-    #                   'file_out': self.parent.lineEdit_outputFile.text(),
-    #                   'filter': 'vertical_derivative'}
-
-    # config['filter'] = {'order': self.comboBox_order.currentText()}
-
-    # # write config file:
-    # with open('config.ini', 'w') as configfile:
-    #     config.write(configfile)
-    # config = configparser.ConfigParser()
-    # config.read('config.ini')
-    ################################
-    dset_dir = '../data/Histological_images_MSI_vs_MSS'
-    dset_mean = [0.7263, 0.5129, 0.6925]
-    dset_std = [0.1444, 0.1833, 0.1310]
-    resnet_layers = 50
-    train_len = "500000"
-    batch_size = 128
-    max_epochs = 10
-    # (torch.optim.RMSprop, 'RMSprop')
-    optim = torch.optim.Adam
-    lr = 1e-3
-    pretrained = True
-    pretrained_tag = 'randomly-initialized'
-    num_gpus = -1
-    run_tag = 'Adam1lr-3'
-    load_weights_path = False  # 'trained_model.ckpt'  # False
+    """Main function.
+    """
+    # read in config file
+    config = configparser.ConfigParser()
+    config.read('config.ini')
     ################################
     pl.seed_everything(10)
 
@@ -59,13 +38,15 @@ def main():
     wandb.login()
 
     ################################
-    # setup data
-    train_len = int(train_len)
-    val_len = int(round(0.2*train_len))
-    dm = DataFolders(data_dir=dset_dir,
+    val_prop = float(config['trainer']['val_prop'])
+    batch_size = int(config['trainer']['batch_size'])
+
+    dset_mean = eval(config['dataset']['dset_mean'])
+    dset_std = eval(config['dataset']['dset_std'])
+
+    dm = DataFolders(data_dir=config['dataset']['dset_dir'],
                      batch_size=batch_size,
-                     train_len=train_len,
-                     val_len=val_len,
+                     val_prop=val_prop,
                      dset_mean=dset_mean,
                      dset_std=dset_std)
     dm.prepare_data()
@@ -77,40 +58,13 @@ def main():
     samples = next(iter(dm.val_dataloader()))
 
     ################################
-    # optim = optim_with_tag[0]
-    # optim_tag = optim_with_tag[1]
-
-    config = dict(
-        train_len=train_len,
-        val_len=val_len,
-        resnet_layers=resnet_layers,
-        pretrained=pretrained,
-        # pretrained can be any of the options below
-        #pretrained = True,
-        #pretrained = False,
-        lr=lr,
-        freeze=True,
-        unfreeze=2,
-        optim=optim,
-        run_tag=run_tag,
-        # optim and run number should be something like the ones below
-        # optim = None,
-        # run_number = '3-Adam 1e-3',
-        # optim = torch.optim.RMSprop,
-        # run_number = '3-RMSprop 1e-3',
-    )
-
-    group_tag = f"ResNet{config['resnet_layers']}_{pretrained_tag}"
-
     wandb.init(
-        project="ts-tl",
-        group=group_tag,
-        config=config,
+        project=config['logger']['project'],
+        group=config['logger']['group_name'],
+        config={s: dict(config.items(s)) for s in config.sections()},
     )
-    wandb.run.name = config['run_tag']
+    wandb.run.name = config['logger']['run_name']
     wandb.run.save()
-    wandb.log({'train_len': train_len,
-               'valid_len': val_len})
 
     # create new early stopping
     early_stopping = EarlyStopping(
@@ -134,8 +88,8 @@ def main():
 
     trainer = pl.Trainer(
         logger=wandb_logger,
-        gpus=num_gpus,
-        max_epochs=max_epochs,           # number of epochs
+        gpus=int(config['trainer']['num_gpus']),
+        max_epochs=int(config['trainer']['max_epochs']),
         deterministic=True,      # keep it deterministic
         callbacks=[ImagePredictionLogger(samples, dm.idx_to_class),
                    early_stopping,
@@ -145,18 +99,19 @@ def main():
     print('ResNet model')
     # setup model
     model = ResNets(in_dims=(3, 224, 224),
-                    lr=config['lr'],
+                    lr=float(config['trainer']['lr']),
                     n_classes=len(dm.classes),
-                    model_filename=group_tag+run_tag,
+                    model_filename=config['logger']['model_name'],
                     class_names=[k for k, _ in dm.class_to_idx.items()],
-                    resnet_layers=config['resnet_layers'],
-                    pretrained=config['pretrained'],
-                    freeze=config['freeze'],
-                    unfreeze=config['unfreeze'],
-                    optim=config['optim'])
+                    resnet_layers=int(config['model']['resnet_layers']),
+                    pretrained=config['model']['pretrained'],
+                    freeze=bool(config['trainer']['freeze']),
+                    unfreeze=int(config['trainer']['unfreeze']),
+                    optim=eval(config['trainer']['optim']))
 
-    if load_weights_path:
-        model = ResNets.load_from_checkpoint(load_weights_path)
+    if os.path.isfile(config['model']['load_weights_path']):
+        model = ResNets.load_from_checkpoint(
+            config['trainer']['load_weights_path'])
 
     # fit the model
     trainer.fit(model, dm)
@@ -167,7 +122,7 @@ def main():
 
     wandb.finish()
     # save checkpoint as torch file
-    os.rename('best_weights.ckpt', 'trained_model.ckpt')
+    os.rename('best_weights.ckpt', config['logger']['model_name'])
 
 
 if __name__ == "__main__":

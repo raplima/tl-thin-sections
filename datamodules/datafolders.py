@@ -1,13 +1,4 @@
 """Defines a pl.LightningDataModule to load image data organized in folders.
-
-We might run into some issues when using multiprocessing to load the data when not in linux 
-(e.g., https://discuss.pytorch.org/t/multiprocessing-not-working-on-pytorch-on-macbook/80663, 
-https://discuss.pytorch.org/t/runtime-error-on-multithread-on-windows/106311/3)
-for now, set 
-num_workers = 0
-instead of 
-num_workers = os.cpu_count()
-for the dataloaders
 """
 import os
 
@@ -47,8 +38,7 @@ class DataFolders(pl.LightningDataModule):
 
     def __init__(self, data_dir='./',
                  batch_size=64,
-                 train_len=1000,
-                 val_len=100,
+                 val_prop=0.2,
                  dset_mean=None,
                  dset_std=None):
         """
@@ -56,8 +46,8 @@ class DataFolders(pl.LightningDataModule):
         Args:
             data_dir (str, optional): Location of the image folders. Defaults to './'.
             batch_size (int, optional): Batch size. Defaults to 64.
-            train_len (int, optional): Number of desired training samples. Defaults to 1000.
-            val_len (int, optional): Number of desired validation samples. Defaults to 100.
+            val_prop (float, optional): Proportion of the dataset to include in the
+                validation split. Defaults to 0.2.
             dset_mean (list): Dataset mean values. Defaults to None.
             dset_std (list): Dataset standard deviation values. Defaults to None
         """
@@ -65,8 +55,7 @@ class DataFolders(pl.LightningDataModule):
         self.data_dir = data_dir
         self.batch_size = batch_size
 
-        self.train_len = train_len
-        self.val_len = val_len
+        self.val_prop = val_prop
 
         # define attributes that will be populated later:
         self.dset = None
@@ -119,24 +108,9 @@ class DataFolders(pl.LightningDataModule):
             x_ind_train = label_indexes[:, 0]
             y_train = label_indexes[:, 1]
 
-            if len(y_train) < self.train_len + self.val_len:
-                print('Warning: number of expected train samples', end=' ')
-                print(f'{self.train_len}', end=' ')
-                print(f'+ val samples {self.val_len}', end=' ')
-                print('is larger than the total number of samples', end=' ')
-                print(f'{len(y_train)}')
-
-                prop = self.val_len / self.train_len
-                self.val_len = int(prop*len(y_train))
-                self.train_len = len(y_train) - self.val_len
-                
-                print('Updated number of train samples to', end = ' ')
-                print(f'{self.train_len}', end=' ')
-                print(f'and val samples to {self.val_len}')
-
             # do the split:
             x_ind_train, x_ind_val, y_train, _ = train_test_split(x_ind_train, y_train,
-                                                                  test_size=self.val_len,
+                                                                  test_size=self.val_prop,
                                                                   stratify=y_train)
 
             # the validation subset should not have data augmentation:
@@ -146,6 +120,9 @@ class DataFolders(pl.LightningDataModule):
             # select the subsets based on train_test_splits and appropriate dsets:
             self.dm_train = Subset(self.dset, x_ind_train)
             self.dm_val = Subset(dset_val, x_ind_val)
+
+            print(f'Train len: {len(self.dm_train)}')
+            print(f'Val len: {len(self.dm_val)}')
 
         if stage == 'test' or stage is None:
             self.dset_test = ImageFolder(os.path.join(self.data_dir, 'test'),
