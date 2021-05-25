@@ -70,7 +70,7 @@ def main():
     early_stopping = EarlyStopping(
         monitor='valid/loss_epoch',
         min_delta=1e-6,
-        patience=10,
+        patience=config['trainer']['patience'],
         verbose=True,
         mode='min'
     )
