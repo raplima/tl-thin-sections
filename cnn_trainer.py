@@ -40,6 +40,7 @@ def main():
     ################################
     val_prop = float(config['trainer']['val_prop'])
     batch_size = int(config['trainer']['batch_size'])
+    desired_batch_size = int(config['trainer']['desired_batch_size'])
 
     dset_mean = eval(config['dataset']['dset_mean'])
     dset_std = eval(config['dataset']['dset_std'])
@@ -70,7 +71,7 @@ def main():
     early_stopping = EarlyStopping(
         monitor='valid/loss_epoch',
         min_delta=1e-6,
-        patience=config['trainer']['patience'],
+        patience=int(config['trainer']['patience']),
         verbose=True,
         mode='min'
     )
@@ -91,6 +92,10 @@ def main():
         gpus=int(config['trainer']['num_gpus']),
         max_epochs=int(config['trainer']['max_epochs']),
         deterministic=True,      # keep it deterministic
+        gradient_clip_val=2.5,   # clip large gradients
+        stochastic_weight_avg=True,
+        accumulate_grad_batches=int(desired_batch_size /\
+                                    batch_size),
         callbacks=[ImagePredictionLogger(samples, dm.idx_to_class),
                    early_stopping,
                    checkpoint_callback]
