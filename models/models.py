@@ -173,8 +173,14 @@ class LitBaseModel(pl.LightningModule):
         Args:
             test_step_outputs (list of tensors): outputs from test_step
         """
-        dummy_input = torch.zeros(self.hparams["in_dims"], device=self.device)
-
+        if self.hparams["five_crop"]:
+            dummy_input = torch.zeros((1, 5,
+                                       *self.hparams["in_dims"]),
+                                      device=self.device)
+        else:
+            dummy_input = torch.zeros(
+                self.hparams["in_dims"], device=self.device)
+        print(f'dummy shape== {dummy_input.shape}')
         if self.hparams["model_filename"]:
             model_filename = f'{self.hparams["model_filename"]}.onnx'
         else:
