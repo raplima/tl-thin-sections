@@ -218,7 +218,8 @@ class ResNets(LitBaseModel):
                  pretrained=True,
                  freeze=False,
                  unfreeze=5,
-                 optim=None):
+                 optim=None,
+                 five_crop=False):
         """
         Args:
             in_dims (list): input dimensions.
@@ -230,6 +231,7 @@ class ResNets(LitBaseModel):
             pretrained (bool, optional): Trained on ImageNet. Defaults to True.
             freeze (bool, optional): Freeze the backbone for the initial epochs. Defaults to False. 
             unfreeze (int, optional): Epoch to unfreeze the backbone (when freeze=True). Defaults to 10.
+            five_crop (boolean, optional). Whether or not to use five crops. Defaults to False. 
         """
 
         super().__init__(in_dims=in_dims,
@@ -272,16 +274,22 @@ class ResNets(LitBaseModel):
             logits (tensor): computed logits by the model.
         """
 
-        if len(x.size()) < 4:
-            x = torch.unsqueeze(x, 0)
+        if self.hparams["five_crop"]:
+            bs, ncrops, c, h, w = x.size()
+            # fuse batch size and ncrops
+            x = self.model(x.view(bs*ncrops, c, h, w))
+            x = F.relu(x)
+            logits = self.finetune_layer(x)
+            logits = logits.view(bs, ncrops, -1).mean(1)  # avg over crops
+        else:
+            if len(x.size()) < 4:
+                x = torch.unsqueeze(x, 0)
 
-        # logits = self.model(x)
+            # return logits
 
-        # return logits
-
-        x = self.model(x)
-        x = F.relu(x)
-        logits = self.finetune_layer(x)
+            x = self.model(x)
+            x = F.relu(x)
+            logits = self.finetune_layer(x)
 
         return logits
 

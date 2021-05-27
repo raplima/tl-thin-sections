@@ -49,7 +49,9 @@ def main():
                      batch_size=batch_size,
                      val_prop=val_prop,
                      dset_mean=dset_mean,
-                     dset_std=dset_std)
+                     dset_std=dset_std,
+                     five_crop=eval(config['model']['five_crop'])
+                     )
     dm.prepare_data()
     dm.setup()
 
@@ -112,7 +114,8 @@ def main():
                     pretrained=config['model']['pretrained'],
                     freeze=bool(config['trainer']['freeze']),
                     unfreeze=int(config['trainer']['unfreeze']),
-                    optim=eval(config['trainer']['optim']))
+                    optim=eval(config['trainer']['optim']),
+                    five_crop=eval(config['model']['five_crop']))
 
     if os.path.isfile(config['model']['load_weights_path']):
         model = ResNets.load_from_checkpoint(
