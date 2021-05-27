@@ -103,7 +103,7 @@ def main():
                    checkpoint_callback]
     )
 
-    print('ResNet model')
+    print(f"ResNet model, pretrained {eval(config['model']['pretrained'])}")
     # setup model
     model = ResNets(in_dims=(3, 224, 224),
                     lr=float(config['trainer']['lr']),
@@ -111,8 +111,8 @@ def main():
                     model_filename=config['logger']['model_name'],
                     class_names=[k for k, _ in dm.class_to_idx.items()],
                     resnet_layers=int(config['model']['resnet_layers']),
-                    pretrained=config['model']['pretrained'],
-                    freeze=bool(config['trainer']['freeze']),
+                    pretrained=eval(config['model']['pretrained']),
+                    freeze=eval(config['trainer']['freeze']),
                     unfreeze=int(config['trainer']['unfreeze']),
                     optim=eval(config['trainer']['optim']),
                     five_crop=eval(config['model']['five_crop']))
