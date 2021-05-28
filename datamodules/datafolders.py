@@ -5,6 +5,7 @@ import os
 import numpy as np
 import pytorch_lightning as pl
 from sklearn.model_selection import train_test_split
+from torch import stack
 from torch.utils.data import DataLoader, Subset
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
@@ -40,7 +41,9 @@ class DataFolders(pl.LightningDataModule):
                  batch_size=64,
                  val_prop=0.2,
                  dset_mean=None,
-                 dset_std=None):
+                 dset_std=None,
+                 size_hw=(224, 224),
+                 five_crop=False):
         """
 
         Args:
@@ -50,12 +53,17 @@ class DataFolders(pl.LightningDataModule):
                 validation split. Defaults to 0.2.
             dset_mean (list): Dataset mean values. Defaults to None.
             dset_std (list): Dataset standard deviation values. Defaults to None
+            size_hw (sequence or int): Desired image size. 
+                If size is a sequence like (h, w), output size will be matched to this.
+            five_crop (boolean): Whether or not use five crop augmentaiton
         """
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
 
         self.val_prop = val_prop
+
+        self.five_crop = five_crop
 
         # define attributes that will be populated later:
         self.dset = None
@@ -72,17 +80,45 @@ class DataFolders(pl.LightningDataModule):
         normalize = transforms.Normalize(mean=dset_mean,
                                          std=dset_std)
 
-        self.transform = transforms.Compose([
-            transforms.ToTensor(),
-            normalize])
+        if five_crop:
 
-        self.transform_train = transforms.Compose([
-            transforms.ToTensor(),
-            normalize,
-            transforms.RandomHorizontalFlip(p=0.5),
-            transforms.RandomVerticalFlip(p=0.5),
-            transforms.RandomRotation(degrees=5),
-        ])
+            # It seems Windows does not work well with multiprocessing Lambda:
+            self.num_workers = 0
+
+            self.transform = transforms.Compose([
+                transforms.FiveCrop(size_hw),  # this is a list of PIL Images
+                transforms.Lambda(lambda crops: stack(
+                    [transforms.ToTensor()(crop) for crop in crops])),
+                normalize,
+            ])
+
+            self.transform_train = transforms.Compose([
+                transforms.FiveCrop(size_hw),  # this is a list of PIL Images
+                transforms.Lambda(lambda crops: stack(
+                    [transforms.ToTensor()(crop) for crop in crops])),
+                normalize,
+                transforms.RandomHorizontalFlip(p=0.5),
+                transforms.RandomVerticalFlip(p=0.5),
+                transforms.RandomRotation(degrees=5),
+            ])
+
+        else:
+            self.num_workers = os.cpu_count()-1
+
+            self.transform = transforms.Compose([
+                transforms.ToTensor(),
+                normalize,
+                transforms.Resize(size=size_hw)],
+            )
+
+            self.transform_train = transforms.Compose([
+                transforms.ToTensor(),
+                normalize,
+                transforms.Resize(size=size_hw),
+                transforms.RandomHorizontalFlip(p=0.5),
+                transforms.RandomVerticalFlip(p=0.5),
+                transforms.RandomRotation(degrees=5),
+            ])
 
     def prepare_data(self):
         """prepare the dataset, set up some attributes
@@ -136,7 +172,7 @@ class DataFolders(pl.LightningDataModule):
         """
         dm_train = DataLoader(self.dm_train,
                               batch_size=self.batch_size,
-                              num_workers=os.cpu_count()-1)
+                              num_workers=self.num_workers)
         return dm_train
 
     def val_dataloader(self):
@@ -146,7 +182,7 @@ class DataFolders(pl.LightningDataModule):
         """
         dm_val = DataLoader(self.dm_val,
                             batch_size=self.batch_size,
-                            num_workers=os.cpu_count()-1)
+                            num_workers=self.num_workers)
         return dm_val
 
     def test_dataloader(self):
@@ -157,5 +193,5 @@ class DataFolders(pl.LightningDataModule):
 
         dm_test = DataLoader(self.dset_test,
                              batch_size=self.batch_size,
-                             num_workers=os.cpu_count()-1)
+                             num_workers=self.num_workers)
         return dm_test
