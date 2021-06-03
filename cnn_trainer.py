@@ -87,6 +87,12 @@ def main():
                                           mode='min'
                                           )
 
+    # make sure no "best_weights" files are stored:
+    for fname in os.listdir():
+        if fname.startswith("best_weights"):
+            print(f'Warning: removing {fname}')
+            os.remove(fname)
+
     wandb_logger = WandbLogger(sync_step=False)
 
     trainer = pl.Trainer(
@@ -129,8 +135,9 @@ def main():
                  ckpt_path='best_weights.ckpt')  # uses best-saved model
 
     wandb.finish()
+
     # save checkpoint as torch file
-    os.rename('best_weights.ckpt', config['logger']['model_name'])
+    os.replace('best_weights.ckpt', config['logger']['model_name'])
 
 
 if __name__ == "__main__":
