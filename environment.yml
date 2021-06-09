@@ -12,6 +12,7 @@ dependencies:
   - torchvision
   - pytorch-lightning
   - tqdm
+  - opencv
   - wandb
   - jupyter
   - pandas
