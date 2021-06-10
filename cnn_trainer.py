@@ -111,6 +111,12 @@ def main():
 
     print(f"ResNet model, pretrained {eval(config['model']['pretrained'])}")
     # setup model
+    if os.path.isfile(config['model']['load_weights_path']):
+        load_weights_path = os.path.normpath(
+            config['model']['load_weights_path'])
+    else:
+        load_weights_path = False
+
     model = ResNets(in_dims=(3, 224, 224),
                     lr=float(config['trainer']['lr']),
                     n_classes=len(dm.classes),
@@ -118,14 +124,11 @@ def main():
                     class_names=[k for k, _ in dm.class_to_idx.items()],
                     resnet_layers=int(config['model']['resnet_layers']),
                     pretrained=eval(config['model']['pretrained']),
+                    load_weights_path=load_weights_path,
                     freeze=eval(config['trainer']['freeze']),
                     unfreeze=int(config['trainer']['unfreeze']),
                     optim=eval(config['trainer']['optim']),
                     five_crop=eval(config['model']['five_crop']))
-
-    if os.path.isfile(config['model']['load_weights_path']):
-        model = ResNets.load_from_checkpoint(
-            config['trainer']['load_weights_path'])
 
     # fit the model
     trainer.fit(model, dm)

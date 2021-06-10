@@ -222,6 +222,7 @@ class ResNets(LitBaseModel):
                  model_filename=None,
                  resnet_layers=18,
                  pretrained=True,
+                 load_weights_path=False,
                  freeze=False,
                  unfreeze=5,
                  optim=None,
@@ -235,6 +236,7 @@ class ResNets(LitBaseModel):
             model_filename (string, optional): Full path for onnx model to be saved. Defaults to None.
             resnet_layers (int, optional): Number of ResNet layers. Defaults to 18.
             pretrained (bool, optional): Trained on ImageNet. Defaults to True.
+            load_weights_path (bool or path): Path to weights. Defaults to False (do not load weights).
             freeze (bool, optional): Freeze the backbone for the initial epochs. Defaults to False. 
             unfreeze (int, optional): Epoch to unfreeze the backbone (when freeze=True). Defaults to 10.
             five_crop (boolean, optional). Whether or not to use five crops. Defaults to False. 
@@ -255,6 +257,16 @@ class ResNets(LitBaseModel):
             34: models.resnet34(pretrained=pretrained),
             50: models.resnet50(pretrained=pretrained)
         }[resnet_layers]
+
+        if load_weights_path:
+            print(f'Loading weights from {load_weights_path}')
+            ckpt = torch.load(load_weights_path)
+            # temporarily set up the top layers as the ckpt model
+            self.model.fc = nn.Linear(self.model.fc.in_features, 1024)
+            self.finetune_layer = nn.Linear(1024,
+                                            len(ckpt['state_dict']['finetune_layer.bias'].tolist()))
+
+            self.load_from_checkpoint(load_weights_path)
 
         # fc becomes a hidden layer
         self.model.fc = nn.Linear(self.model.fc.in_features, 1024)
