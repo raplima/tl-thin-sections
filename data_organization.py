@@ -16,6 +16,9 @@ def main():
     # readme update ('a') or new ('w')
     readme_w = 'w'
 
+    # desired output image dimensions (width, height):
+    dim = (1292//2, 968//2)
+
     # number of samples per class (except the NoClass ones)
     n_test_samples = 20
 
@@ -61,6 +64,8 @@ def main():
             else:
                 img = cv2.imread(os.path.join(root, f))
                 img = simplest_cb(img, 1)
+                # resize image
+                img = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
                 cv2.imwrite(os.path.join(root, f), img)
 
         # remove empty directories
