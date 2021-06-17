@@ -4,3 +4,5 @@ wandb/*
 *ckpt*
 *onnx*
 **desktop.ini**
+*.ini
+config.ini
