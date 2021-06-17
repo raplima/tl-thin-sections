@@ -7,7 +7,6 @@ import pl_bolts
 import pytorch_lightning as pl
 import torch
 import wandb
-from pl_bolts.models.self_supervised import SwAV
 from torch import nn
 from torch.nn import functional as F
 from torchvision import models
