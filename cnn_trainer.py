@@ -23,12 +23,12 @@ from utils.image_prediction_logger import ImagePredictionLogger
 ################################
 
 
-def main():
+def main(config_file):
     """Main function.
     """
     # read in config file
     config = configparser.ConfigParser()
-    config.read('config.ini')
+    config.read(config_file)
     ################################
     pl.seed_everything(10)
 
@@ -144,4 +144,14 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-cf', '--config_file')
+
+    args = parser.parse_args()
+    if not args.config_file:
+        main('config.ini')
+    elif os.path.isfile(args.config_file):
+        main(os.path.normpath(args.config_file))
+    else:
+        print('Please check provided config file')
