@@ -137,6 +137,26 @@ def main(config_file):
     trainer.test(datamodule=dm,
                  ckpt_path='best_weights.ckpt')  # uses best-saved model
 
+    # predict again, but now save the results
+    # TODO add this into trainer.test()
+
+    model.freeze()
+    preds = []
+    ys = []
+    for batch in iter(dm.test_dataloader()):
+        x, y = batch
+        ys += y.tolist()
+        logits = model(x)
+        preds += torch.argmax(logits, 1).tolist()
+
+    data = [[imgpath for imgpath, _ in dm.dset_test.imgs],
+            [dm.idx_to_class[pred] for pred in preds],
+            [dm.idx_to_class[y] for y in ys]]
+
+    wandb.log({"Predictions":
+               wandb.Table(data=list(map(list, zip(*data))),
+                           columns=["Filename", "Predicted Label", "Actual Label"])})
+
     wandb.finish()
 
     # save checkpoint as torch file
